@@ -25,10 +25,18 @@ sortedList = sortByWord $ wordOrder2 $ wordList text
 getSuccessor :: [(String,String)] -> String -> StdGen -> String
 getSuccessor dict word stdgen = choose (filter (\w -> fst w == word) dict) stdgen
   where choose :: [(String, String)] -> StdGen -> String
+        choose [] _ = ""
         choose dict gen = snd (dict !! fst (randomR (0, length dict-1) gen))
+
+getSentence :: [(String,String)] -> String -> StdGen -> String
+getSentence dict start gen = unwords $ reverse $ buildSentence dict [start] gen
+  where buildSentence :: [(String,String)] -> [String] -> StdGen -> [String]
+        buildSentence dict sen gen
+          | getSuccessor dict (head sen) gen == "" = sen
+          | otherwise = buildSentence dict (getSuccessor dict (head sen) gen : sen) gen
 
 doEverything :: IO ()
 doEverything = do
                gen <- newStdGen
-               putStrLn $ getSuccessor sortedList "the" gen
+               putStrLn $ getSentence sortedList "by" gen
 
