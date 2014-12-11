@@ -63,13 +63,17 @@ sortedList s = sortByWord $ wordOrder2 $ wordList s
 
 -- Randomly picks a sucessor to follow the given word from the dictionary.
 getSuccessor :: Dict -> String -> StdGen -> (String, StdGen)
-getSuccessor dict word stdgen = chooseWord (filter (\w -> fst w == word) dict) stdgen
+getSuccessor dict word gen = chooseWord (filter (\w -> fst w == word) dict) gen
 
 -- Chooses the successor to a given word
 chooseWord :: Dict -> StdGen -> (String, StdGen)
 chooseWord []   gen = ("", gen)
 chooseWord dict gen = (snd (dict !! index),nextGen)
   where (index, nextGen) = randomR (0, length dict-1) gen
+
+-- TODO: Skriv en arbitrary-wrapper för Dict
+prop_successor_chooseWord :: Dict -> StdGen -> Bool
+prop_successor_chooseWord = undefined
 
 -- Chooses a whole sentence, word by word, given a starting word for the sentence.
 getSentence :: Dict -> String -> StdGen -> String
