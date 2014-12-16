@@ -33,7 +33,7 @@ wordList = words
 -- because it has no successor.
 wordOrder2 :: [String] -> Dict
 wordOrder2 []     = []
-wordOrder2 (x:[]) = []
+wordOrder2 (x:[]) = [(x, "")]
 wordOrder2 (f:x:xs) 
            | endOfSentence f = (f,"") : wordOrder2 (x:xs)
            | otherwise = (f,x) : wordOrder2 (x:xs)
@@ -71,9 +71,28 @@ chooseWord []   gen = ("", gen)
 chooseWord dict gen = (snd (dict !! index),nextGen)
   where (index, nextGen) = randomR (0, length dict-1) gen
 
--- TODO: Skriv en arbitrary-wrapper för Dict
-prop_successor_chooseWord :: Dict -> StdGen -> Bool
-prop_successor_chooseWord = undefined
+data MarkovDict = Markov Dict
+  deriving Show
+
+instance Arbitrary MarkovDict where
+  arbitrary = generateMarkovDict
+
+instance Arbitrary StdGen where
+  arbitrary = do n <- arbitrary
+                 return (mkStdGen n)
+
+generateMarkovDict :: Gen MarkovDict
+generateMarkovDict = do
+  words <- listOf1 $ listOf1 $ elements ('.':['a'..'z'])
+  return (Markov (wordOrder2 words))
+
+prop_word_getSuccessor :: MarkovDict -> StdGen -> Bool
+prop_word_getSuccessor (Markov dict) gen = fst successor `elem` legalWords
+  where (index, nextGen) = randomR (0, length dict-1) gen
+        successor = getSuccessor dict word nextGen
+        word = fst (dict !! index)
+        tuples = filter (\t -> fst t == word) dict
+        legalWords = map snd tuples
 
 -- Chooses a whole sentence, word by word, given a starting word for the sentence.
 getSentence :: Dict -> String -> StdGen -> String
@@ -92,7 +111,7 @@ printMarkovText :: FilePath -> IO ()
 printMarkovText f = do
                gen <- newStdGen
                text <- readText f
-               let list = sortedList text
+               let list = wordOrder2 $ wordList text
                let upperList = filter (\t -> isAsciiUpper $ head $ fst t) list
                let (seed, nextGen) = randomR (0, length upperList-1) gen
                putStrLn $ getSentence list (fst $ upperList !! seed) nextGen
