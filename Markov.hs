@@ -83,7 +83,7 @@ instance Arbitrary StdGen where
 
 generateMarkovDict :: Gen MarkovDict
 generateMarkovDict = do
-  words <- listOf1 $ listOf1 $ elements ('.':['a'..'z'])
+  words <- listOf1 $ listOf1 $ elements (['.', '!', '?'] ++ ['a'..'z'])
   return (Markov (wordOrder2 words))
 
 prop_word_getSuccessor :: MarkovDict -> StdGen -> Bool
