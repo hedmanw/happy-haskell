@@ -31,6 +31,7 @@ getSentence dict start gen = unwords $ reverse $ buildSentence dict [start] gen
   where buildSentence :: Dict -> [String] -> StdGen -> [String]
         buildSentence dict sen gen
          | fst (getSuccessor dict [head sen] gen) == "" = sen
+         | endOfSentence $ fst (getSuccessor dict [head sen] gen) = fst (getSuccessor dict [head sen] gen) : sen
          | otherwise = 
            let succ = getSuccessor dict [head sen] gen in
            buildSentence dict (fst succ : sen) (snd succ)
