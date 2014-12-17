@@ -8,10 +8,14 @@ import Test.QuickCheck
 -- in haskell!
 -- Jonathan Thunberg
 -- Wilhelm Hedman
-
-text :: String
---text = "of the people, by the people, for the people"
-text = "Slow lorises have a round head, narrow snout, large eyes, and a variety of distinctive coloration patterns that are species-dependent. Their arms and legs are nearly equal in length, and their trunk is long, allowing them to twist and extend to nearby branches. The hands and feet of slow lorises have several adaptations that give them a pincer-like grip and enable them to grasp branches for long periods of time. Slow lorises have a toxic bite, a trait rare among mammals and unique to lorisid primates. The toxin is obtained by licking a gland on their arm, and the secretion is activated by mixing with saliva. Their toxic bite is a deterrent to predators, and the toxin is also applied to the fur during grooming as a form of protection for their infants. They move slowly and deliberately, making little or no noise, and when threatened, they stop moving and remain motionless. Their only documented predators—apart from humans—include snakes, hawk-eagles and orangutans, although cats, civets and sun bears are suspected. Little is known about their social structure, but they are known to communicate by scent marking. Males are highly territorial. Slow lorises reproduce slowly, and the infants are initially parked on branches or carried by either parent. They are omnivores, eating small animals, fruit, tree gum, and other vegetation."
+-- 
+-- We have implemented 2/3 of our goals. We dropped the idea
+-- that you should be able to have a "conversation".
+-- Instead, the program now generates a sentence based on
+-- an input text.
+-- The provided text file, slow_loris.txt is taken from the
+-- Wikipedia page for Slow Loris. It can be used as input
+-- for printMarkovText.
 
 -- Dict is a list of string tuples, where the second string is a word that follows after the first string
 type Dict = [(String, String)]
@@ -40,13 +44,13 @@ wordOrder2 (f:x:xs)
 
 prop_length_wordOrder2 :: [String] -> Property
 prop_length_wordOrder2 words = length words > 0 ==>
-  (length words -1) == (length $ wordOrder2 words)
+  (length words) == (length $ wordOrder2 words)
 
 prop_successor_wordOrder2 :: [String] -> Bool
 prop_successor_wordOrder2 words = checkSuccessor words (wordOrder2 words)
   where checkSuccessor :: [String] -> Dict -> Bool
-        checkSuccessor [] _  = True 
-        checkSuccessor (w:[]) [] = True
+        checkSuccessor [] _            = True 
+        checkSuccessor (w:[]) [(_,"")] = True
         checkSuccessor (w:nw:ws) (d:ds)
           | endOfSentence w
             = snd d == "" && checkSuccessor (nw:ws) ds
@@ -63,7 +67,7 @@ sortedList s = sortByWord $ wordOrder2 $ wordList s
 
 -- Randomly picks a sucessor to follow the given word from the dictionary.
 getSuccessor :: Dict -> String -> StdGen -> (String, StdGen)
-getSuccessor dict word gen = chooseWord (filter (\w -> fst w == word) dict) gen
+getSuccessor dict word = chooseWord (filter (\w -> fst w == word) dict)
 
 -- Chooses the successor to a given word
 chooseWord :: Dict -> StdGen -> (String, StdGen)
@@ -83,7 +87,7 @@ instance Arbitrary StdGen where
 
 generateMarkovDict :: Gen MarkovDict
 generateMarkovDict = do
-  words <- listOf1 $ listOf1 $ elements (['.', '!', '?'] ++ ['a'..'z'])
+  words <- listOf1 $ listOf1 $ elements (".!?" ++ ['a'..'z'])
   return (Markov (wordOrder2 words))
 
 prop_word_getSuccessor :: MarkovDict -> StdGen -> Bool
@@ -104,17 +108,16 @@ getSentence dict start gen = unwords $ reverse $ buildSentence dict [start] gen
            let succ = getSuccessor dict (head sen) gen in
            buildSentence dict (fst succ : sen) (snd succ)
 
-doEverything :: Dict -> String -> StdGen -> String
-doEverything dict start gen = getSentence dict start gen
-
+-- Prints a generated sentence based on the input file.
 printMarkovText :: FilePath -> IO ()
 printMarkovText f = do
                gen <- newStdGen
                text <- readText f
                let list = wordOrder2 $ wordList text
-               let upperList = filter (\t -> isAsciiUpper $ head $ fst t) list
+               let upperList = filter (isAsciiUpper . head . fst) list
                let (seed, nextGen) = randomR (0, length upperList-1) gen
                putStrLn $ getSentence list (fst $ upperList !! seed) nextGen
 
 readText :: FilePath -> IO String
 readText = readFile
+
