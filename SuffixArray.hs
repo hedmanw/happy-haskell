@@ -2,6 +2,8 @@ import Test.QuickCheck
 import qualified Data.Vector as V
 import qualified Data.List as L
 
+text = words "to be or not to be"
+
 -- SuffixArray = SuccessorList av en corpus = base text och index för orden
 data SuffixArray a = SuffixArray (V.Vector a) (V.Vector Int)
   deriving Show
@@ -32,10 +34,15 @@ toList :: SuffixArray a -> [[a]]
 toList (SuffixArray c i) = V.foldr vectorAt [] i
   where vectorAt index l = V.toList (V.drop index c) : l
 
+-- Get all n-grams from the SuffixArray
 ngramOf :: Int -> SuffixArray a -> [[a]]
 ngramOf n s = filter ((== n) . length) $ map (take n) $ toList s
 
-prop_length_ngramOf :: Int -> SuffixArray String -> Property
+ngramOfList :: Ord a => Int -> [a] -> [[a]]
+ngramOfList n c = ngramOf n (fromList c)
+
+prop_length_ngramOf :: Int -> SuffixArray Int -> Property
 prop_length_ngramOf n (SuffixArray c i) =
-    V.length c >= n ==> (1+ V.length c -n) == (length $ ngramOf n (SuffixArray c i))
+    V.length c >= n && n > 0 ==>
+    (1+ V.length c -n) == (length $ ngramOf n (SuffixArray c i))
 
