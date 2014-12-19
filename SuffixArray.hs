@@ -62,13 +62,33 @@ binarySearch p (low, high)
         EQ -> Just mid
 
 binarySearchVector :: Ord a => V.Vector a -> a -> Maybe Int
-binarySearchVector v item = binarySearch pivot (0, V.length v - 1) 
+binarySearchVector v item = binarySearch pivot (0, V.length v - 1)
   where pivot index = item `compare` (v V.! index)
 
+-- Checks whether or not a (sub)vector is contained in the SuffixArray
 contains :: Ord a => SuffixArray a -> V.Vector a -> Bool
-contains s e = case binarySearchVector (restrict eLen s) e of
-                 Just _ -> True
-                 Nothing -> False
-  where eLen = V.length e
-        restrict len = V.map (V.take len) . elems
+contains s subVector = case binarySearchVector (shorten s) subVector of
+                         Just _ -> True
+                         Nothing -> False
+  where shorten = V.map (V.take $ V.length subVector) . elems
 
+lowerIndexOf :: Ord a => V.Vector a -> a -> Maybe Int
+lowerIndexOf vec item = lowerIndexOfBy pivot (0, V.length vec - 1)
+  where pivot index = item `compare` (vec V.! index)
+
+lowerIndexOfBy :: Integral a => (a -> Ordering) -> (a, a) -> Maybe a
+lowerIndexOfBy p (low, high)
+  | low == high = case p low of
+                    EQ -> Just low
+                    _  -> Nothing
+  | otherwise = let mid = (low + high) `div` 2 in
+                case p mid of
+                  GT -> lowerIndexOfBy p (mid+1, high)
+                  _  -> lowerIndexOfBy p (low, mid)
+
+prop_lowerIndexOf :: [Int] -> Int -> Bool
+prop_lowerIndexOf list item = V.elemIndex item vec == lowerIndexOf vec item
+  where vec = V.fromList $ L.sort (1:list)
+
+frequencyOf :: Ord a => V.Vector a -> a -> Maybe Int
+frequencyOf vec item = undefined
