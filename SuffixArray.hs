@@ -116,4 +116,12 @@ prop_frequencyOf list item = frequencyOf vec item == listFreq list item
                            | otherwise = Nothing
         freq = length $ L.elemIndices item list
 
+containsWithFrequency :: Ord a => SuffixArray a -> V.Vector a -> Maybe Int
+containsWithFrequency sa vec 
+  | contains sa vec = frequencyOf (shorten sa) vec
+  | otherwise = Nothing
+  where shorten = V.map (V.take $ V.length vec) . elems
+
+mostFrequentNgram :: Ord a => SuffixArray a -> Int Maybe (V.Vector a, Int)
+mostFrequentNgram = undefined
 
