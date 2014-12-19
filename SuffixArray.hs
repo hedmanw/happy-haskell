@@ -88,9 +88,34 @@ lowerIndexOfBy p (low, high)
                   GT -> lowerIndexOfBy p (mid+1, high)
                   _  -> lowerIndexOfBy p (low, mid)
 
-prop_lowerIndexOf :: [Int] -> Int -> Bool
-prop_lowerIndexOf list item = V.elemIndex item vec == lowerIndexOf vec item
-  where vec = V.fromList $ L.sort list
+upperIndexOf :: Ord a => V.Vector a -> a -> Maybe Int
+upperIndexOf vec item = case low of
+                          Just _ -> upperIndexOfBy pivot (fromJust low, V.length vec - 1)
+                          Nothing -> Nothing
+  where pivot index = item `compare` (vec V.! index)
+        low = binarySearchVector vec item
+
+upperIndexOfBy :: Integral a => (a -> Ordering) -> (a, a) -> Maybe a
+upperIndexOfBy p (low, high)
+  | high <= low = case p low of
+                    EQ -> Just low
+                    _  -> Nothing
+  | otherwise = case p mid of
+                  LT -> upperIndexOfBy p (low, mid-1)
+                  _  -> upperIndexOfBy p (mid, high)
+  where mid = ((low + high) `div` 2) + 1
 
 frequencyOf :: Ord a => V.Vector a -> a -> Maybe Int
-frequencyOf vec item = undefined
+frequencyOf vec item = do
+  lower <- lowerIndexOf vec item
+  upper <- upperIndexOf vec item
+  return (upper-lower+1)
+
+prop_frequencyOf :: [Int] -> Int -> Bool
+prop_frequencyOf list item = frequencyOf vec item == listFreq list item
+  where vec = V.fromList $ L.sort list
+        listFreq :: [Int] -> Int -> Maybe Int
+        listFreq list item | freq > 0 = Just freq
+                           | otherwise = Nothing
+        freq = length $ L.elemIndices item list
+
