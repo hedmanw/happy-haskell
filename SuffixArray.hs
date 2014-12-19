@@ -4,6 +4,7 @@ import qualified Data.Vector as V
 import qualified Data.List as L
 
 text = words "to be or not to be"
+corpus = fromList text
 
 -- SuffixArray = SuccessorList av en corpus = base text och index för orden
 data SuffixArray a = SuffixArray (V.Vector a) (V.Vector Int)
@@ -73,12 +74,9 @@ contains s subVector = case binarySearchVector (shorten s) subVector of
                          Nothing -> False
   where shorten = V.map (V.take $ V.length subVector) . elems
 
-lowerIndexOf :: Ord a => V.Vector a -> a -> Maybe Int
-lowerIndexOf vec item = case high of
-                          Just _  -> lowerIndexOfBy pivot (0, fromJust high)
-                          Nothing -> Nothing
+lowerIndexOf :: Ord a => V.Vector a -> a -> Int -> Maybe Int
+lowerIndexOf vec item high = lowerIndexOfBy pivot (0, high)
   where pivot index = item `compare` (vec V.! index)
-        high = binarySearchVector vec item
 
 lowerIndexOfBy :: Integral a => (a -> Ordering) -> (a, a) -> Maybe a
 lowerIndexOfBy p (low, high)
@@ -88,28 +86,27 @@ lowerIndexOfBy p (low, high)
                   GT -> lowerIndexOfBy p (mid+1, high)
                   _  -> lowerIndexOfBy p (low, mid)
 
-upperIndexOf :: Ord a => V.Vector a -> a -> Maybe Int
-upperIndexOf vec item = case low of
-                          Just _ -> upperIndexOfBy pivot (fromJust low, V.length vec - 1)
-                          Nothing -> Nothing
+upperIndexOf :: Ord a => V.Vector a -> a -> Int -> Maybe Int
+upperIndexOf vec item low = upperIndexOfBy pivot (low, V.length vec - 1)
   where pivot index = item `compare` (vec V.! index)
-        low = binarySearchVector vec item
 
 upperIndexOfBy :: Integral a => (a -> Ordering) -> (a, a) -> Maybe a
 upperIndexOfBy p (low, high)
-  | high <= low = case p low of
-                    EQ -> Just low
-                    _  -> Nothing
-  | otherwise = case p mid of
-                  LT -> upperIndexOfBy p (low, mid-1)
-                  _  -> upperIndexOfBy p (mid, high)
-  where mid = ((low + high) `div` 2) + 1
+  | high == low = Just low
+  | otherwise = case p (mid+1) of
+                  LT -> upperIndexOfBy p (low, mid)
+                  _  -> upperIndexOfBy p (mid+1, high)
+  where mid = ((low + high) `div` 2)
 
 frequencyOf :: Ord a => V.Vector a -> a -> Maybe Int
-frequencyOf vec item = do
-  lower <- lowerIndexOf vec item
-  upper <- upperIndexOf vec item
-  return (upper-lower+1)
+frequencyOf vec item
+  | isNothing pivot = Nothing
+  | otherwise = do
+      let index = fromJust pivot
+      lower <- lowerIndexOf vec item index
+      upper <- upperIndexOf vec item index
+      return (upper-lower+1)
+  where pivot = binarySearchVector vec item
 
 prop_frequencyOf :: [Int] -> Int -> Bool
 prop_frequencyOf list item = frequencyOf vec item == listFreq list item
@@ -118,4 +115,5 @@ prop_frequencyOf list item = frequencyOf vec item == listFreq list item
         listFreq list item | freq > 0 = Just freq
                            | otherwise = Nothing
         freq = length $ L.elemIndices item list
+
 
