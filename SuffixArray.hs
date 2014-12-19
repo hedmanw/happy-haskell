@@ -46,3 +46,29 @@ prop_length_ngramOf n (SuffixArray c i) =
     V.length c >= n && n > 0 ==>
     (1+ V.length c -n) == (length $ ngramOf n (SuffixArray c i))
 
+-- Like toList, but returns a Vector of Vectors instead of list of lists
+elems :: SuffixArray a -> V.Vector (V.Vector a)
+elems (SuffixArray c i) = V.map vectorAt i
+  where vectorAt index = V.drop index c
+
+binarySearch :: Integral a => (a -> Ordering) -> (a, a) -> Maybe a
+binarySearch p (low, high)
+  | high < low = Nothing
+  | otherwise =
+      let mid = (low + high) `div` 2 in
+      case p mid of
+        LT -> binarySearch p (low, mid-1)
+        GT -> binarySearch p (mid+1, high)
+        EQ -> Just mid
+
+binarySearchVector :: Ord a => V.Vector a -> a -> Maybe Int
+binarySearchVector v item = binarySearch pivot (0, V.length v - 1) 
+  where pivot index = item `compare` (v V.! index)
+
+contains :: Ord a => SuffixArray a -> V.Vector a -> Bool
+contains s e = case binarySearchVector (restrict eLen s) e of
+                 Just _ -> True
+                 Nothing -> False
+  where eLen = V.length e
+        restrict len = V.map (V.take len) . elems
+
