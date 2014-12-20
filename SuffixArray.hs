@@ -122,6 +122,6 @@ containsWithFrequency sa vec
   | otherwise = Nothing
   where shorten = V.map (V.take $ V.length vec) . elems
 
-mostFrequentNgram :: Ord a => SuffixArray a -> Int Maybe (V.Vector a, Int)
+mostFrequentNgram :: Ord a => SuffixArray a -> Int -> Maybe (V.Vector a, Int)
 mostFrequentNgram = undefined
 
