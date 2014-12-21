@@ -53,6 +53,9 @@ elems :: SuffixArray a -> V.Vector (V.Vector a)
 elems (SuffixArray c i) = V.map vectorAt i
   where vectorAt index = V.drop index c
 
+ngramFromElems :: SuffixArray a -> Int -> V.Vector (V.Vector a)
+ngramFromElems sa n = V.filter ((== n) . V.length) $ V.map (V.take n) $ elems sa
+
 binarySearch :: Integral a => (a -> Ordering) -> (a, a) -> Maybe a
 binarySearch p (low, high)
   | high < low = Nothing
@@ -123,5 +126,5 @@ containsWithFrequency sa vec
   where shorten = V.map (V.take $ V.length vec) . elems
 
 mostFrequentNgram :: Ord a => SuffixArray a -> Int -> Maybe (V.Vector a, Int)
-mostFrequentNgram = undefined
+mostFrequentNgram sa n = undefined
 
