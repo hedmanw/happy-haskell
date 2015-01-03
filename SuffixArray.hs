@@ -123,18 +123,17 @@ prop_frequencyOf list item = frequencyOf vec item == listFreq list item
 
 containsWithFrequency :: Ord a => SuffixArray a -> V.Vector a -> Maybe Int
 containsWithFrequency sa vec 
-  | contains sa vec = frequencyOf (shorten sa) vec
+  | contains sa vec = frequencyOf (ngramFromElems sa (V.length vec)) vec
   | otherwise = Nothing
-  where shorten = V.map (V.take $ V.length vec) . elems
 
 mostFrequentNgram :: Ord a => SuffixArray a -> Int -> Maybe ([V.Vector a], Int)
 mostFrequentNgram sa n 
   | V.length ngrams == 0 = Nothing
-  | otherwise = Just $ ngramHelper $ ngramFrequencies ngrams
+  | otherwise = Just $ maxNgram $ ngramFrequencies ngrams
     where ngrams = ngramFromElems sa n
 
-ngramHelper :: Ord a => [(V.Vector a, Int)] -> ([V.Vector a], Int)
-ngramHelper ngs = (winners, max)
+maxNgram :: Ord a => [(V.Vector a, Int)] -> ([V.Vector a], Int)
+maxNgram ngs = (winners, max)
   where max      = maximum $ snd $ unzip ngs
         winners  = fst $ unzip $ filter (\n -> snd n == max) ngs
 
@@ -142,3 +141,8 @@ ngramFrequencies :: Ord a => V.Vector (V.Vector a) -> [(V.Vector a, Int)]
 ngramFrequencies ngs = L.nub $ V.toList $ V.zip ngs lens
   where lens = V.map (\n -> fromJust $ frequencyOf ngs n) ngs
 
+prop_ngramFrequencies :: SuffixArray Int -> Int -> Property
+prop_ngramFrequencies (SuffixArray c i) n =
+    V.length c >= n ==>
+    (all (\ngram -> fromJust (frequencyOf body (fst ngram)) == snd ngram) (ngramFrequencies body))
+  where body  = ngramFromElems (SuffixArray c i) n
