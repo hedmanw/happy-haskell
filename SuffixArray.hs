@@ -1,3 +1,5 @@
+module SuffixArray where
+
 import Test.QuickCheck
 import Data.Maybe
 import qualified Data.Vector as V
@@ -125,24 +127,18 @@ containsWithFrequency sa vec
   | otherwise = Nothing
   where shorten = V.map (V.take $ V.length vec) . elems
 
--- Borde kanske returnera Maybe (Vector $ Vector a, Int)
-mostFrequentNgram :: Ord a => SuffixArray a -> Int -> Maybe (V.Vector a, Int)
-mostFrequentNgram sa n = undefined
-  where ngrams = ngramFromElems sa n
+mostFrequentNgram :: Ord a => SuffixArray a -> Int -> Maybe ([V.Vector a], Int)
+mostFrequentNgram sa n 
+  | V.length ngrams == 0 = Nothing
+  | otherwise = Just $ ngramHelper $ ngramFrequencies ngrams
+    where ngrams = ngramFromElems sa n
 
-mostCommon :: Ord a => V.Vector a -> V.Vector (V.Vector a)
-mostCommon vec = vectorGroup $ L.group $ V.toList vec
+ngramHelper :: Ord a => [(V.Vector a, Int)] -> ([V.Vector a], Int)
+ngramHelper ngs = (winners, max)
+  where max      = maximum $ snd $ unzip ngs
+        winners  = fst $ unzip $ filter (\n -> snd n == max) ngs
 
-vectorGroup :: Ord a => [[a]] -> V.Vector (V.Vector a)
-vectorGroup [] = V.fromList []
-vectorGroup ls = V.fromList $ vectorInner ls
-  where vectorInner :: [[a]] -> [V.Vector a]
-        vectorInner []     = []
-        vectorInner (x:xs) = V.fromList x : vectorInner xs
-
-prop_length_vectorGroup :: [[Int]] -> Bool
-prop_length_vectorGroup xs = (length $ concat xs) == (V.length $ V.concat $ V.toList $ vectorGroup xs)
-
-most :: Ord a => V.Vector a -> V.Vector a -> Ordering
-most x y = V.length x `compare` V.length y
+ngramFrequencies :: Ord a => V.Vector (V.Vector a) -> [(V.Vector a, Int)]
+ngramFrequencies ngs = L.nub $ V.toList $ V.zip ngs lens
+  where lens = V.map (\n -> fromJust $ frequencyOf ngs n) ngs
 
