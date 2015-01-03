@@ -79,6 +79,7 @@ contains s subVector = case binarySearchVector (shorten s) subVector of
                          Nothing -> False
   where shorten = V.map (V.take $ V.length subVector) . elems
 
+-- Finds the lowest index of a given item in an ordered array by binarysearch
 lowerIndexOf :: Ord a => V.Vector a -> a -> Int -> Maybe Int
 lowerIndexOf vec item high = lowerIndexOfBy pivot (0, high)
   where pivot index = item `compare` (vec V.! index)
@@ -91,6 +92,7 @@ lowerIndexOfBy p (low, high)
                   GT -> lowerIndexOfBy p (mid+1, high)
                   _  -> lowerIndexOfBy p (low, mid)
 
+-- Finds the highest index of a given item in an ordered array by binarysearch
 upperIndexOf :: Ord a => V.Vector a -> a -> Int -> Maybe Int
 upperIndexOf vec item low = upperIndexOfBy pivot (low, V.length vec - 1)
   where pivot index = item `compare` (vec V.! index)
@@ -103,6 +105,7 @@ upperIndexOfBy p (low, high)
                   _  -> upperIndexOfBy p (mid+1, high)
   where mid = ((low + high) `div` 2)
 
+-- Finds the number of times a given item occurs in an ordered array
 frequencyOf :: Ord a => V.Vector a -> a -> Maybe Int
 frequencyOf vec item
   | isNothing pivot = Nothing
@@ -121,11 +124,13 @@ prop_frequencyOf list item = frequencyOf vec item == listFreq list item
                            | otherwise = Nothing
         freq = length $ L.elemIndices item list
 
+-- Finds the number of times a given sequence occurs within the suffixarray
 containsWithFrequency :: Ord a => SuffixArray a -> V.Vector a -> Maybe Int
 containsWithFrequency sa vec 
   | contains sa vec = frequencyOf (ngramFromElems sa (V.length vec)) vec
   | otherwise = Nothing
 
+-- Finds the most common ngram(s) for a given n in a suffixarray
 mostFrequentNgram :: Ord a => SuffixArray a -> Int -> Maybe ([V.Vector a], Int)
 mostFrequentNgram sa n 
   | V.length ngrams == 0 = Nothing
