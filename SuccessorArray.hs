@@ -5,9 +5,6 @@ import Data.Maybe
 import qualified Data.Vector as V
 import qualified Data.List as L
 
-text = words "to be or not to be"
-corpus = fromList text
-
 -- SuccessorArray contains one vector, containing the corpus, and one vector
 -- which represents the natural order of the items in the corpus.
 data SuccessorArray a = SuccessorArray (V.Vector a) (V.Vector Int)

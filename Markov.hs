@@ -8,6 +8,13 @@ import SuccessorArray
 -- Jonathan Thunberg
 -- Wilhelm Hedman
 --
+text = "att vara eller att inte vara"
+corpus = ngramOf (fromList $ words text) 2
+
+-- Funktion som bygger ngramOfElems från corpus
+-- Funktion som binärsöker fram successors
+-- Funktion som bygger mening
+
 -- Delimiters for sentences. Could probably be different depending on input language.
 sentenceSeparator = [".", "!", "?"]
 
