@@ -39,16 +39,16 @@ toList (SuffixArray c i) = V.foldr vectorAt [] i
   where vectorAt index l = V.toList (V.drop index c) : l
 
 -- Get all n-grams from the SuffixArray
-ngramOf :: Int -> SuffixArray a -> [[a]]
-ngramOf n s = filter ((== n) . length) $ map (take n) $ toList s
+ngramOf :: SuffixArray a -> Int -> [[a]]
+ngramOf s n = filter ((== n) . length) $ map (take n) $ toList s
 
-ngramOfList :: Ord a => Int -> [a] -> [[a]]
-ngramOfList n c = ngramOf n (fromList c)
+ngramOfList :: Ord a => [a] -> Int -> [[a]]
+ngramOfList c n = ngramOf (fromList c) n
 
 prop_length_ngramOf :: Int -> SuffixArray Int -> Property
 prop_length_ngramOf n (SuffixArray c i) =
     V.length c >= n && n > 0 ==>
-    (1+ V.length c -n) == (length $ ngramOf n (SuffixArray c i))
+    (1+ V.length c -n) == (length $ ngramOf (SuffixArray c i) n)
 
 -- Like toList, but returns a Vector of Vectors instead of list of lists
 elems :: SuffixArray a -> V.Vector (V.Vector a)
