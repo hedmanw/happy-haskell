@@ -20,18 +20,18 @@ saCompare :: Ord a => V.Vector a -> Int -> Int -> Ordering
 saCompare c i j = compare (V.drop i c) (V.drop j c)
 
 -- Construct a SuccessorArray from a single vector containing the corpus
-suffixArray :: Ord a => V.Vector a -> SuccessorArray a
-suffixArray c = SuccessorArray c (V.fromList wordIndices)
+successorArray :: Ord a => V.Vector a -> SuccessorArray a
+successorArray c = SuccessorArray c (V.fromList wordIndices)
   where corpusSize = V.length c -1
         allIndices = [0..corpusSize]
         wordIndices = L.sortBy (saCompare c) allIndices
 
 -- Make a SuccessorArray from a List
 fromList :: Ord a => [a] -> SuccessorArray a
-fromList = suffixArray . V.fromList
+fromList = successorArray . V.fromList
 
--- Make a list of lists containing each suffix sequence, in order of the
--- first item of the suffix sequence.
+-- Make a list of lists containing each successor sequence, in order of the
+-- first item of the successor sequence.
 toList :: SuccessorArray a -> [[a]]
 toList (SuccessorArray c i) = V.foldr vectorAt [] i
   where vectorAt index l = V.toList (V.drop index c) : l
@@ -122,13 +122,13 @@ prop_frequencyOf list item = frequencyOf vec item == listFreq list item
                            | otherwise = Nothing
         freq = length $ L.elemIndices item list
 
--- Finds the number of times a given sequence occurs within the suffixarray
+-- Finds the number of times a given sequence occurs within the successorarray
 containsWithFrequency :: Ord a => SuccessorArray a -> V.Vector a -> Maybe Int
 containsWithFrequency sa vec 
   | contains sa vec = frequencyOf (ngramFromElems sa (V.length vec)) vec
   | otherwise = Nothing
 
--- Finds the most common ngram(s) for a given n in a suffixarray
+-- Finds the most common ngram(s) for a given n in a successorarray
 mostFrequentNgram :: Ord a => SuccessorArray a -> Int -> Maybe ([V.Vector a], Int)
 mostFrequentNgram sa n 
   | V.length ngrams == 0 = Nothing
