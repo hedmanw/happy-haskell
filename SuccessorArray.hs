@@ -1,4 +1,4 @@
-module SuffixArray where
+module SuccessorArray where
 
 import Test.QuickCheck
 import Data.Maybe
@@ -8,11 +8,12 @@ import qualified Data.List as L
 text = words "to be or not to be"
 corpus = fromList text
 
--- SuffixArray = SuccessorList av en corpus = base text och index för orden
-data SuffixArray a = SuffixArray (V.Vector a) (V.Vector Int)
+-- SuccessorArray contains one vector, containing the corpus, and one vector
+-- which represents the natural order of the items in the corpus.
+data SuccessorArray a = SuccessorArray (V.Vector a) (V.Vector Int)
   deriving Show
 
-instance (Arbitrary a, Ord a) => Arbitrary (SuffixArray a) where
+instance (Arbitrary a, Ord a) => Arbitrary (SuccessorArray a) where
   arbitrary = do
     list <- arbitrary
     return (fromList list)
@@ -21,41 +22,41 @@ instance (Arbitrary a, Ord a) => Arbitrary (SuffixArray a) where
 saCompare :: Ord a => V.Vector a -> Int -> Int -> Ordering
 saCompare c i j = compare (V.drop i c) (V.drop j c)
 
--- Construct a SuffixArray from a single vector containing the corpus
-suffixArray :: Ord a => V.Vector a -> SuffixArray a
-suffixArray c = SuffixArray c (V.fromList wordIndices)
+-- Construct a SuccessorArray from a single vector containing the corpus
+suffixArray :: Ord a => V.Vector a -> SuccessorArray a
+suffixArray c = SuccessorArray c (V.fromList wordIndices)
   where corpusSize = V.length c -1
         allIndices = [0..corpusSize]
         wordIndices = L.sortBy (saCompare c) allIndices
 
--- Make a SuffixArray from a List
-fromList :: Ord a => [a] -> SuffixArray a
+-- Make a SuccessorArray from a List
+fromList :: Ord a => [a] -> SuccessorArray a
 fromList = suffixArray . V.fromList
 
 -- Make a list of lists containing each suffix sequence, in order of the
 -- first item of the suffix sequence.
-toList :: SuffixArray a -> [[a]]
-toList (SuffixArray c i) = V.foldr vectorAt [] i
+toList :: SuccessorArray a -> [[a]]
+toList (SuccessorArray c i) = V.foldr vectorAt [] i
   where vectorAt index l = V.toList (V.drop index c) : l
 
--- Get all n-grams from the SuffixArray
-ngramOf :: SuffixArray a -> Int -> [[a]]
+-- Get all n-grams from the SuccessorArray
+ngramOf :: SuccessorArray a -> Int -> [[a]]
 ngramOf s n = filter ((== n) . length) $ map (take n) $ toList s
 
 ngramOfList :: Ord a => [a] -> Int -> [[a]]
 ngramOfList c n = ngramOf (fromList c) n
 
-prop_length_ngramOf :: Int -> SuffixArray Int -> Property
-prop_length_ngramOf n (SuffixArray c i) =
+prop_length_ngramOf :: Int -> SuccessorArray Int -> Property
+prop_length_ngramOf n (SuccessorArray c i) =
     V.length c >= n && n > 0 ==>
-    (1+ V.length c -n) == (length $ ngramOf (SuffixArray c i) n)
+    (1+ V.length c -n) == (length $ ngramOf (SuccessorArray c i) n)
 
 -- Like toList, but returns a Vector of Vectors instead of list of lists
-elems :: SuffixArray a -> V.Vector (V.Vector a)
-elems (SuffixArray c i) = V.map vectorAt i
+elems :: SuccessorArray a -> V.Vector (V.Vector a)
+elems (SuccessorArray c i) = V.map vectorAt i
   where vectorAt index = V.drop index c
 
-ngramFromElems :: SuffixArray a -> Int -> V.Vector (V.Vector a)
+ngramFromElems :: SuccessorArray a -> Int -> V.Vector (V.Vector a)
 ngramFromElems sa n = V.filter ((== n) . V.length) $ V.map (V.take n) $ elems sa
 
 binarySearch :: Integral a => (a -> Ordering) -> (a, a) -> Maybe a
@@ -72,8 +73,8 @@ binarySearchVector :: Ord a => V.Vector a -> a -> Maybe Int
 binarySearchVector v item = binarySearch pivot (0, V.length v - 1)
   where pivot index = item `compare` (v V.! index)
 
--- Checks whether or not a (sub)vector is contained in the SuffixArray
-contains :: Ord a => SuffixArray a -> V.Vector a -> Bool
+-- Checks whether or not a (sub)vector is contained in the SuccessorArray
+contains :: Ord a => SuccessorArray a -> V.Vector a -> Bool
 contains s subVector = case binarySearchVector (shorten s) subVector of
                          Just _ -> True
                          Nothing -> False
@@ -125,13 +126,13 @@ prop_frequencyOf list item = frequencyOf vec item == listFreq list item
         freq = length $ L.elemIndices item list
 
 -- Finds the number of times a given sequence occurs within the suffixarray
-containsWithFrequency :: Ord a => SuffixArray a -> V.Vector a -> Maybe Int
+containsWithFrequency :: Ord a => SuccessorArray a -> V.Vector a -> Maybe Int
 containsWithFrequency sa vec 
   | contains sa vec = frequencyOf (ngramFromElems sa (V.length vec)) vec
   | otherwise = Nothing
 
 -- Finds the most common ngram(s) for a given n in a suffixarray
-mostFrequentNgram :: Ord a => SuffixArray a -> Int -> Maybe ([V.Vector a], Int)
+mostFrequentNgram :: Ord a => SuccessorArray a -> Int -> Maybe ([V.Vector a], Int)
 mostFrequentNgram sa n 
   | V.length ngrams == 0 = Nothing
   | otherwise = Just $ maxNgram $ ngramFrequencies ngrams
@@ -146,8 +147,8 @@ ngramFrequencies :: Ord a => V.Vector (V.Vector a) -> [(V.Vector a, Int)]
 ngramFrequencies ngs = L.nub $ V.toList $ V.zip ngs lens
   where lens = V.map (\n -> fromJust $ frequencyOf ngs n) ngs
 
-prop_ngramFrequencies :: SuffixArray Int -> Int -> Property
-prop_ngramFrequencies (SuffixArray c i) n =
+prop_ngramFrequencies :: SuccessorArray Int -> Int -> Property
+prop_ngramFrequencies (SuccessorArray c i) n =
     V.length c >= n ==>
     (all (\ngram -> fromJust (frequencyOf body (fst ngram)) == snd ngram) (ngramFrequencies body))
-  where body  = ngramFromElems (SuffixArray c i) n
+  where body  = ngramFromElems (SuccessorArray c i) n
