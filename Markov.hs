@@ -67,13 +67,13 @@ printMarkovText f = do
     
     text <- readText f
     let ngrams = buildOptimalMarkovNgram text
-    let (first, nextGen) = randomR (getAllSuccessors (findCaps ngrams) ngrams 0) gen 
-    putStrLn $ getSentence ngrams (words text !! first) nextGen
+    let startIndex =fromJust $ binarySearch (findCaps ngrams) (0, V.length ngrams - 1)
+    let (first, nextGen) = randomR (getAllSuccessors (findCaps ngrams) ngrams startIndex) gen 
+    putStrLn $ getSentence ngrams (V.head $ ngrams V.! first) nextGen
 
 findCaps :: Successors -> Int -> Ordering
-findCaps sa n | ascii < 65 = GT
-              | ascii > 90 = LT
+findCaps sa n | ascii < 65 = LT
+              | ascii > 90 = GT
               | otherwise  = EQ
-
   where ascii = ord $ head $ V.head $ sa V.! n
 
