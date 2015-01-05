@@ -32,24 +32,23 @@ getSuccessor sa w gen
   | otherwise = (V.last $ sa V.! rand, nextGen)
   where successor = binarySearch search (0, V.length sa -1) 
         search = searchSuccessor sa w
-        (lower, upper) = getAllSuccessors sa w (fromJust successor)
+        (lower, upper) = getAllSuccessors search sa (fromJust successor)
         (rand, nextGen) = randomR (lower, upper) gen
 
 searchSuccessor sa w n = w `compare` (V.head $ sa V.! n)
 
-getAllSuccessors :: Successors -> String -> Int -> (Int, Int)
-getAllSuccessors sa w n = (lowerIndex, upperIndex)
+getAllSuccessors :: (Int -> Ordering) -> Successors -> Int -> (Int, Int)
+getAllSuccessors search sa n = (lowerIndex, upperIndex)
   where lowerIndex = fromJust $ lowerIndexOfBy search (0, n)
         upperIndex = fromJust $ upperIndexOfBy search (n, V.length sa -1)
-        search = searchSuccessor sa w
 
 -- Funktion som bygger mening
 getSentence :: Successors -> String -> StdGen -> String
 getSentence sa start gen =unwords $ getRecSentence sa start gen
 
 getRecSentence :: Successors -> String -> StdGen -> [String]
-getRecSentence sa "" gen = []
-getRecSentence sa w gen = w : getRecSentence sa word nextGen
+getRecSentence sa w gen |endOfSentence w = [w]  
+                        |otherwise = w : getRecSentence sa word nextGen
   where (word, nextGen) = getSuccessor sa w gen
 
 -- Delimiters for sentences. Could probably be different depending on input language.
@@ -68,6 +67,13 @@ printMarkovText f = do
     
     text <- readText f
     let ngrams = buildOptimalMarkovNgram text
-    putStrLn $ getSentence ngrams (head $ words text) gen
+    let (first, nextGen) = randomR (getAllSuccessors (findCaps ngrams) ngrams 0) gen 
+    putStrLn $ getSentence ngrams (words text !! first) nextGen
 
+findCaps :: Successors -> Int -> Ordering
+findCaps sa n | ascii < 65 = GT
+              | ascii > 90 = LT
+              | otherwise  = EQ
+
+  where ascii = ord $ head $ V.head $ sa V.! n
 
