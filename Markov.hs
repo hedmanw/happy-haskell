@@ -44,6 +44,13 @@ getAllSuccessors sa w n = (lowerIndex, upperIndex)
         search = searchSuccessor sa w
 
 -- Funktion som bygger mening
+getSentence :: Successors -> String -> StdGen -> String
+getSentence sa start gen =unwords $ getRecSentence sa start gen
+
+getRecSentence :: Successors -> String -> StdGen -> [String]
+getRecSentence sa "" gen = []
+getRecSentence sa w gen = w : getRecSentence sa word nextGen
+  where (word, nextGen) = getSuccessor sa w gen
 
 -- Delimiters for sentences. Could probably be different depending on input language.
 sentenceSeparator = [".", "!", "?"]
@@ -54,4 +61,13 @@ endOfSentence s = any (\sep -> sep `isSuffixOf` s) sentenceSeparator
 
 readText :: FilePath -> IO String
 readText = readFile
+
+printMarkovText :: FilePath -> IO()
+printMarkovText f = do 
+    gen <- newStdGen
+    
+    text <- readText f
+    let ngrams = buildOptimalMarkovNgram text
+    putStrLn $ getSentence ngrams (head $ words text) gen
+
 
