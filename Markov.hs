@@ -7,25 +7,28 @@ import Test.QuickCheck
 import SuccessorArray
 import qualified Data.Vector as V
 
+-- TDA452
 -- Jonathan Thunberg
 -- Wilhelm Hedman
---
-text = "att vara eller att inte vara"
-corpus = ngramOf (fromList $ words text) 2
+-- Markov text generator
+-- Changes: The text generation is now based on ngrams.
+--          The ngram module is contained in SuccessorArray.hs.
+-- To make a sample run, run printMarkovText "slow_loris.txt"
 
--- Funktion som bygger ngramOfElems från corpus
 buildNgram :: Ord a => [a] -> Int -> V.Vector (V.Vector a)
 buildNgram cs n = ngramFromElems (fromList cs) n
 
 type Successors = V.Vector (V.Vector String)
 
+-- Builds an ngram array from the corpus
 buildMarkovNgram :: [String] -> Int -> Successors
 buildMarkovNgram = buildNgram
 
+-- Builds an optimal bigram from the corpus
 buildOptimalMarkovNgram :: String -> Successors
 buildOptimalMarkovNgram inputText = buildMarkovNgram (words inputText) 2
 
--- Funktion som binärsöker fram successors
+-- Finds a successor to a word by binary search
 getSuccessor :: Successors -> String -> StdGen -> (String, StdGen)
 getSuccessor sa w gen
   | isNothing successor = ("",gen)
@@ -42,13 +45,13 @@ getAllSuccessors search sa n = (lowerIndex, upperIndex)
   where lowerIndex = fromJust $ lowerIndexOfBy search (0, n)
         upperIndex = fromJust $ upperIndexOfBy search (n, V.length sa -1)
 
--- Funktion som bygger mening
+-- Builds a sentence based on a start word.
 getSentence :: Successors -> String -> StdGen -> String
-getSentence sa start gen =unwords $ getRecSentence sa start gen
+getSentence sa start gen = unwords $ getRecSentence sa start gen
 
 getRecSentence :: Successors -> String -> StdGen -> [String]
-getRecSentence sa w gen |endOfSentence w = [w]  
-                        |otherwise = w : getRecSentence sa word nextGen
+getRecSentence sa w gen | endOfSentence w = [w]
+                        | otherwise = w : getRecSentence sa word nextGen
   where (word, nextGen) = getSuccessor sa w gen
 
 -- Delimiters for sentences. Could probably be different depending on input language.
@@ -61,10 +64,11 @@ endOfSentence s = any (\sep -> sep `isSuffixOf` s) sentenceSeparator
 readText :: FilePath -> IO String
 readText = readFile
 
+-- Prints a random sentence based on the input file.
+-- The input file must contain syntactically correct language.
 printMarkovText :: FilePath -> IO()
 printMarkovText f = do 
     gen <- newStdGen
-    
     text <- readText f
     let ngrams = buildOptimalMarkovNgram text
     let startIndex =fromJust $ binarySearch (findCaps ngrams) (0, V.length ngrams - 1)
@@ -72,8 +76,8 @@ printMarkovText f = do
     putStrLn $ getSentence ngrams (V.head $ ngrams V.! first) nextGen
 
 findCaps :: Successors -> Int -> Ordering
-findCaps sa n | ascii < 65 = LT
-              | ascii > 90 = GT
+findCaps sa n | ascii < 65 = GT
+              | ascii > 90 = LT
               | otherwise  = EQ
   where ascii = ord $ head $ V.head $ sa V.! n
 

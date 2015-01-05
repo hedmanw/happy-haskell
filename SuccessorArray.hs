@@ -5,6 +5,18 @@ import Data.Maybe
 import qualified Data.Vector as V
 import qualified Data.List as L
 
+-- TDA452
+-- Jonathan Thunberg
+-- Wilhelm Hedman
+--
+-- This is a) the backend for the Markov module
+--         b) a ngram utility implementation, to expand a bit on the lab
+-- For example, we have implemented "utility" functions for ngrams
+-- such as containsWithFrequency and mostFrequentNgram.
+-- In addition, we use a sorted array as the data structure,
+-- in order to optimize performance.
+
+
 -- SuccessorArray contains one vector, containing the corpus, and one vector
 -- which represents the natural order of the items in the corpus.
 data SuccessorArray a = SuccessorArray (V.Vector a) (V.Vector Int)
@@ -149,3 +161,4 @@ prop_ngramFrequencies (SuccessorArray c i) n =
     V.length c >= n ==>
     (all (\ngram -> fromJust (frequencyOf body (fst ngram)) == snd ngram) (ngramFrequencies body))
   where body  = ngramFromElems (SuccessorArray c i) n
+
